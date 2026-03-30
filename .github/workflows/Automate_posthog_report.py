@@ -8,7 +8,7 @@ from datetime import datetime
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
-POSTHOG_API_KEY = "phx_yAlLnYOwGe2eGKnic7O6lpTP6ViSdcniiNyGiwhzwf9GOEY"
+POSTHOG_API_KEY = os.getenv("API_KEY")
 PROJECT_ID = 1
 DASHBOARD_ID = 7
 
