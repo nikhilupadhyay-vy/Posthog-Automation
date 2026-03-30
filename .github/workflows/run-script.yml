@@ -27,4 +27,4 @@ jobs:
           API_KEY: ${{ secrets.API_KEY }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
         run: |
-          Automate_posthog_report.py
+          python Automate_posthog_report.py
