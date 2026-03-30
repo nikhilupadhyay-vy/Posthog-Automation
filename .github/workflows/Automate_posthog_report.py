@@ -20,7 +20,7 @@ HEADERS = {
     "Content-Type": "application/json",
 }
 
-SLACK_BOT_TOKEN = "xoxb-91986544022-10234221989315-0FDXOpLsbTQiu37RHYJYVYxM"
+SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN")
 CHANNEL_ID = "C03RN1YTMJM"
 
 
