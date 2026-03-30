@@ -1,7 +1,6 @@
 import requests
 import pandas as pd
 from collections import defaultdict
-import csv
 import os
 import io
 from typing import Dict, List
@@ -208,61 +207,72 @@ if not email_events:
         raise ValueError("No user event data found. Please check the insight data structure.")
 
 
-# ── BUILD CSV IN MEMORY (no disk writes) ─────────────────────────────────────
+# ── BUILD TXT SUMMARY IN MEMORY ───────────────────────────────────────────────
 
-def build_csv_buffer(email_events: dict) -> io.BytesIO:
-    """Build the CSV entirely in memory and return a BytesIO buffer."""
-    if not email_events:
-        buf = io.BytesIO()
-        buf.write(b"email\n")
-        buf.seek(0)
-        return buf
-
-    max_events = max(len(v) for v in email_events.values())
-    columns = ["email"] + [f"user_events.{i}" for i in range(max_events)]
-
-    output_data = []
-    for email, events in sorted(email_events.items()):
-        row = {"email": email}
-        for idx, event in enumerate(events):
-            row[f"user_events.{idx}"] = event
-        for idx in range(len(events), max_events):
-            row[f"user_events.{idx}"] = ""
-        output_data.append(row)
-
-    df = pd.DataFrame(output_data, columns=columns)
-
-    # Write to an in-memory text buffer first, then encode to bytes
-    text_buf = io.StringIO()
-    df.to_csv(text_buf, index=False)
-    byte_buf = io.BytesIO(text_buf.getvalue().encode("utf-8"))
-    byte_buf.seek(0)
-
-    print(f"CSV built in memory — {len(df)} users, {max_events} event columns")
-    return byte_buf
+def parse_event(event: str) -> str:
+    """Extract the target from 'click | Target' format."""
+    if ' | ' in event:
+        _, target = event.split(' | ', 1)
+        return target.strip()
+    return event.strip()
 
 
-# ── SEND DIRECTLY TO SLACK ────────────────────────────────────────────────────
+def build_txt_buffer(email_events: dict) -> io.BytesIO:
+    """Build the summary TXT entirely in memory and return a BytesIO buffer."""
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-def send_csv_to_slack(buffer: io.BytesIO, channel: str, token: str) -> None:
-    """Upload the in-memory CSV buffer straight to a Slack channel."""
+    lines = []
+    lines.append("User Activity Summary in last 24 hrs.")
+    lines.append(f"Generated: {timestamp}")
+    lines.append("=" * 80)
+    lines.append("")
+
+    for email in sorted(email_events.keys()):
+        events = email_events[email]
+
+        # Deduplicate while preserving order
+        seen = set()
+        unique_targets = []
+        for event in events:
+            target = parse_event(event)
+            if target and target not in seen:
+                seen.add(target)
+                unique_targets.append(target)
+
+        if unique_targets:
+            targets_str = ", ".join(unique_targets)
+            lines.append(f"{email.lower()} -> clicked on {targets_str}")
+            lines.append("")  # blank line between users
+
+    content = "\n".join(lines).rstrip() + "\n"
+    buf = io.BytesIO(content.encode("utf-8"))
+    buf.seek(0)
+
+    print(f"TXT summary built in memory — {len(email_events)} users")
+    return buf
+
+
+# ── SEND TXT TO SLACK ─────────────────────────────────────────────────────────
+
+def send_txt_to_slack(buffer: io.BytesIO, channel: str, token: str) -> None:
+    """Upload the in-memory TXT buffer straight to a Slack channel."""
     client = WebClient(token=token)
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    filename = f"user_activity_{timestamp}.csv"
+    filename = f"user_activity_summary_{timestamp}.txt"
 
     try:
         client.files_upload_v2(
             channel=channel,
-            file=buffer,          # accepts any file-like object
+            file=buffer,
             filename=filename,
-            title="User Activity Report",
+            title="User Activity Summary",
             initial_comment="Hi Team,\nSharing the User Activity Last 24 Hours report. 📄",
         )
-        print("✅ CSV sent to Slack successfully.")
+        print("✅ TXT summary sent to Slack successfully.")
     except SlackApiError as e:
         print("❌ Slack error:", e.response["error"])
 
 
 if __name__ == "__main__":
-    csv_buffer = build_csv_buffer(email_events)
-    send_csv_to_slack(csv_buffer, CHANNEL_ID, SLACK_BOT_TOKEN)
+    txt_buffer = build_txt_buffer(email_events)
+    send_txt_to_slack(txt_buffer, CHANNEL_ID, SLACK_BOT_TOKEN)
