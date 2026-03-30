@@ -20,7 +20,7 @@ HEADERS = {
 }
 
 SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN")
-CHANNEL_ID = "C0A1VGB49NU"
+CHANNEL_ID = "C03RN1YTMJM"
 
 
 def get_json(url):
