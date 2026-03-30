@@ -1,0 +1,13 @@
+User Activity Summary in last 24 hrs.
+Generated: 2026-03-02 11:00:10
+================================================================================
+
+christopher@pinegrove.vc -> clicked on Portfolio
+
+egardizi@venrock.com -> clicked on Reload, Overview
+
+mercedes@lsvp.com -> clicked on Y, All Metrics
+
+tyler@felicis.com -> clicked on KPIs, Supabase, Search Portfolio Companies, All Metrics
+
+zoe@felicis.com -> clicked on DeepJudge, Search Portfolio Companies, Search
